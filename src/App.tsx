@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink, Maximize2 } from "lucide-react";
+import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Textarea } from "./components/ui/textarea";
 import { Card } from "./components/ui/card";
@@ -145,6 +145,7 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
           {result.platform && <MetricRow label="Платформа" value={result.platform} />}
           <MetricRow label="Регионы" value={result.region} />
         </div>
+        <div className="flex-1" />
         <div className="flex gap-1.5 flex-wrap">
           {result.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/30 dark:to-blue-900/30 text-[#1DAFF7] border-sky-100/50 dark:border-sky-700/30">
@@ -152,7 +153,7 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
             </Badge>
           ))}
         </div>
-        <p className="text-xs leading-relaxed text-muted-foreground flex-1">{result.rationale}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{result.rationale}</p>
         <div className="bg-muted/50 rounded-lg p-3 space-y-2 border">
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Скоринг</div>
           <ScoreBar label="Цена" value={result.priceScore} />
@@ -333,6 +334,10 @@ export default function App() {
     setPhase("chat");
   }
 
+  function goToResults() {
+    setPhase("results");
+  }
+
   function ThemeToggle() {
     return (
       <button
@@ -442,6 +447,13 @@ export default function App() {
   if (phase === "chat") {
     return (
       <div className="h-screen flex flex-col bg-background transition-colors duration-300">
+        {results && (
+          <div className="shrink-0 flex items-center justify-end px-5 py-2 border-b">
+            <button onClick={goToResults} className="text-muted-foreground hover:text-foreground transition-colors" title="Свернуть чат">
+              <Minimize2 className="w-5 h-5" />
+            </button>
+          </div>
+        )}
         <div ref={chatRef} className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-3xl mx-auto space-y-4">
             {messages.length === 0 ? null : (
