@@ -24,6 +24,7 @@ interface ServiceResult extends ServiceItem {
   priceScore: number;
   taskMatchScore: number;
   criteriaMatchScore: number;
+  pricing_elements: Array<{ description: string; uom: string; price: number }>;
 }
 
 type Phase = "catalog" | "chat" | "results";
@@ -65,9 +66,29 @@ const ALL_SERVICES: ServiceItem[] = [
 ];
 
 const MOCK_RESULTS: ServiceResult[] = [
-  { id: "r1", name: "Объектное хранилище S3", provider: "Т1 Облако", tags: ["S3", "152-ФЗ", "OpenStack"], description: "S3-хранилище с мультизональным размещением и интеграцией с OpenStack.", url: "https://t1-cloud.ru/services/s3", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Наиболее выгодное предложение в заданном бюджете (2000 руб/мес). Полное соответствие 152-ФЗ, мультизональный S3 повышает надёжность.", priceScore: 9, taskMatchScore: 9, criteriaMatchScore: 8 },
-  { id: "r2", name: "Evolution Object Storage", provider: "Cloud.ru", tags: ["S3", "152-ФЗ", "Multi-AZ"], description: "S3-хранилище от Cloud.ru с версионированием и совместимостью S3 API.", url: "https://cloud.ru/services/object-storage", fz152: true, region: "Москва", rationale: "Отличная альтернатива с мощным функционалом. Дороже Т1, но предоставляет больше гибкости и глобальную CDN.", priceScore: 8, taskMatchScore: 10, criteriaMatchScore: 9 },
-  { id: "r3", name: "Cloud Storage", provider: "VK Cloud", tags: ["S3", "Hotbox", "Icebox"], description: "Объектное хранилище VK Cloud с горячим и холодным классами.", url: "https://cloud.vk.com/services/storage", fz152: false, region: "Москва, Санкт-Петербург", rationale: "Самое бюджетное решение при больших объёмах. Без официального статуса 152-ФЗ.", priceScore: 10, taskMatchScore: 7, criteriaMatchScore: 6 },
+  { id: "r1", name: "Объектное хранилище S3", provider: "Т1 Облако", tags: ["S3", "152-ФЗ", "OpenStack"], description: "S3-хранилище с мультизональным размещением и интеграцией с OpenStack.", url: "https://t1-cloud.ru/services/s3", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Наиболее выгодное предложение в заданном бюджете (2000 руб/мес). Полное соответствие 152-ФЗ, мультизональный S3 повышает надёжность.", priceScore: 9, taskMatchScore: 9, criteriaMatchScore: 8, pricing_elements: [
+    { description: "Объектное хранилище (S3), хранение данных", uom: "ГБ*мин", price: 0.00003819 },
+    { description: "Объектное хранилище (S3), скачивание данных", uom: "ГБ", price: 0.25 },
+    { description: "Объектное хранилище (S3), запросы Put/Post", uom: "1000 шт", price: 0.24 },
+    { description: "Объектное хранилище (S3), запросы Get/Head", uom: "10 000 шт", price: 0.24 },
+    { description: "Объектное хранилище (мультизональное S3), хранение данных", uom: "ГБ*мин", price: 0.00006906 },
+    { description: "Объектное хранилище (мультизональное S3), скачивание данных", uom: "ГБ", price: 0.50 },
+    { description: "Объектное хранилище (мультизональное S3), запросы Put/Post", uom: "1000 шт", price: 0.24 },
+    { description: "Объектное хранилище (мультизональное S3), запросы Get/Head", uom: "10 000 шт", price: 0.24 },
+  ] },
+  { id: "r2", name: "Evolution Object Storage", provider: "Cloud.ru", tags: ["S3", "152-ФЗ", "Multi-AZ"], description: "S3-хранилище от Cloud.ru с версионированием и совместимостью S3 API.", url: "https://cloud.ru/services/object-storage", fz152: true, region: "Москва", rationale: "Отличная альтернатива с мощным функционалом. Дороже Т1, но предоставляет больше гибкости и глобальную CDN.", priceScore: 8, taskMatchScore: 10, criteriaMatchScore: 9, pricing_elements: [
+    { description: "Evolution Object Storage, хранение", uom: "ГБ", price: 2.5 },
+    { description: "Evolution Object Storage, запросы Put/Post", uom: "1000 шт", price: 0.30 },
+    { description: "Evolution Object Storage, запросы Get/Head", uom: "10 000 шт", price: 0.20 },
+    { description: "Evolution Object Storage, исходящий трафик", uom: "ГБ", price: 1.0 },
+  ] },
+  { id: "r3", name: "Cloud Storage", provider: "VK Cloud", tags: ["S3", "Hotbox", "Icebox"], description: "Объектное хранилище VK Cloud с горячим и холодным классами.", url: "https://cloud.vk.com/services/storage", fz152: false, region: "Москва, Санкт-Петербург", rationale: "Самое бюджетное решение при больших объёмах. Без официального статуса 152-ФЗ.", priceScore: 10, taskMatchScore: 7, criteriaMatchScore: 6, pricing_elements: [
+    { description: "Cloud Storage (Hotbox), хранение", uom: "ГБ", price: 1.8 },
+    { description: "Cloud Storage (Icebox), хранение", uom: "ГБ", price: 0.9 },
+    { description: "Cloud Storage, запросы Put/Post", uom: "1000 шт", price: 0.20 },
+    { description: "Cloud Storage, запросы Get/Head", uom: "10 000 шт", price: 0.15 },
+    { description: "Cloud Storage, исходящий трафик", uom: "ГБ", price: 0.80 },
+  ] },
 ];
 
 // ---------- Score bar ----------
@@ -160,6 +181,22 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
           <ScoreBar label="Соответствие задаче" value={result.taskMatchScore} />
           <ScoreBar label="Соответствие критериям" value={result.criteriaMatchScore} />
         </div>
+        {result.pricing_elements && result.pricing_elements.length > 0 && (
+          <div className="bg-muted/50 rounded-lg p-3 border">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Тарификация</div>
+            <table className="w-full text-[11px]">
+              <tbody>
+                {result.pricing_elements.slice(0, 5).map((el, i) => (
+                  <tr key={i} className="border-t border-border/40 first:border-t-0">
+                    <td className="py-1 pr-2 text-foreground">{el.description}</td>
+                    <td className="py-1 pr-2 text-muted-foreground whitespace-nowrap text-center">{el.uom}</td>
+                    <td className="py-1 text-center whitespace-nowrap font-medium tabular-nums">{el.price} ₽</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </Card>
   );
