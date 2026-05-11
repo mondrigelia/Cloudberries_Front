@@ -119,12 +119,19 @@ function CatalogCard({ service }: { service: ServiceItem }) {
 }
 
 // ========== RESULT CARD ==========
+const RANK_STYLES: Record<number, { border: string; rankColor: string }> = {
+  1: { border: "ring-2 ring-[#FFD700]", rankColor: "text-[#FFD700]" },
+  2: { border: "ring-2 ring-[#C0C0C0]", rankColor: "text-[#C0C0C0]" },
+  3: { border: "ring-2 ring-[#CD7F32]", rankColor: "text-[#CD7F32]" },
+};
+
 function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number }) {
+  const style = RANK_STYLES[rank] || RANK_STYLES[3];
   return (
-    <Card className="overflow-hidden flex flex-col flex-1">
+    <Card className={`overflow-hidden flex flex-col flex-1 ${style.border}`}>
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-black tracking-tight">#{rank}</span>
+          <span className={`text-lg font-black tracking-tight ${style.rankColor}`}>#{rank}</span>
           <ProviderIcon provider={result.provider} size="sm" />
           <span className="text-xs font-medium text-muted-foreground">{result.provider}</span>
         </div>
@@ -481,19 +488,6 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-background transition-colors duration-300">
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-5 pt-4 space-y-4">
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
-              <div className={`max-w-[85%] lg:max-w-[70%] px-4 py-3 text-sm leading-relaxed ${
-                msg.role === "user"
-                  ? "bg-gradient-to-br from-[#1DAFF7] to-[#008ACD] text-white rounded-2xl rounded-br-md shadow-lg shadow-[#1DAFF7]/20"
-                  : "bg-muted text-foreground rounded-2xl rounded-bl-md"
-              }`}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
-        </div>
         {results && (
           <div className="max-w-6xl mx-auto p-5">
             <div className="flex items-center gap-3 mb-4">
