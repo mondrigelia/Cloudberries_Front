@@ -597,7 +597,7 @@ export default function App() {
           <div className={`shrink-0 border-r bg-card overflow-y-auto p-4 space-y-3 transition-all duration-200 ${showSearchHistory ? "w-60" : "w-auto"}`}>
             <div className="flex items-center gap-2">
               {!showSearchHistory && <div className="w-4" />}
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">История поиска</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Прошлые подборки</div>
               <button onClick={() => setShowSearchHistory(v => !v)} className="text-muted-foreground hover:text-foreground transition-colors ml-auto">
                 {showSearchHistory ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
               </button>
