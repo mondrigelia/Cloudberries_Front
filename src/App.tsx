@@ -706,8 +706,8 @@ export default function App() {
 
       {/* MOBILE: split layout — top results, bottom chat + input */}
       <div className="sm:hidden flex-1 flex flex-col overflow-hidden">
-        {/* Top half: scrollable results */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Top: scrollable results (60%) */}
+        <div className="flex-[6] overflow-y-auto min-h-0">
           {currentSet && (
             <div className="p-3">
               <div className="grid grid-cols-1 gap-2">
@@ -721,13 +721,13 @@ export default function App() {
           )}
         </div>
 
-        {/* Divider handle */}
+        {/* Divider */}
         <div className="shrink-0 border-t flex items-center justify-center py-1.5 bg-card">
           <div className="w-8 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        {/* Bottom half: scrollable chat messages */}
-        <div ref={chatRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+        {/* Bottom: scrollable chat messages (40%) */}
+        <div ref={chatRef} className="flex-[4] overflow-y-auto px-3 py-2 space-y-2 min-h-0">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
               <div className={`max-w-[90%] px-3 py-2 text-sm leading-relaxed ${
