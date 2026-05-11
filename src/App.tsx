@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
+import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink, Maximize2, Minimize2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Textarea } from "./components/ui/textarea";
 import { Card } from "./components/ui/card";
@@ -90,6 +90,46 @@ const MOCK_RESULTS: ServiceResult[] = [
     { description: "Cloud Storage, исходящий трафик", uom: "ГБ", price: 0.80 },
   ] },
 ];
+
+const MOCK_RESULTS_2: ServiceResult[] = [
+  { id: "r4", name: "Managed Kubernetes", provider: "Т1 Облако", tags: ["K8s", "152-ФЗ", "OpenStack"], description: "Управляемый кластер Kubernetes с автоскейлингом и интеграцией в OpenStack.", url: "https://t1-cloud.ru/services/kubernetes", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Лучшее решение для контейнеризации в Москве. Полное соответствие 152-ФЗ, интеграция с OpenStack.", priceScore: 8, taskMatchScore: 9, criteriaMatchScore: 8, pricing_elements: [
+    { description: "Kubernetes, мастер-узел", uom: "час", price: 12 },
+    { description: "Kubernetes, рабочий узел", uom: "час", price: 3.5 },
+    { description: "Kubernetes, нагрузочный балансировщик", uom: "час", price: 1.2 },
+    { description: "Kubernetes, хранение данных", uom: "ГБ", price: 2 },
+  ] },
+  { id: "r5", name: "Managed PostgreSQL", provider: "Т1 Облако", tags: ["БД", "PostgreSQL", "152-ФЗ"], description: "DBaaS на базе PostgreSQL с автоматическим бэкапом, репликацией и мониторингом.", url: "https://t1-cloud.ru/services/postgresql", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Надёжная управляемая БД с полным соответствием 152-ФЗ и автоматическим резервным копированием.", priceScore: 7, taskMatchScore: 8, criteriaMatchScore: 9, pricing_elements: [
+    { description: "PostgreSQL, 1 vCPU + 2 ГБ RAM", uom: "час", price: 2.5 },
+    { description: "PostgreSQL, хранилище SSD", uom: "ГБ", price: 5 },
+    { description: "PostgreSQL, резервные копии", uom: "ГБ", price: 1 },
+  ] },
+  { id: "r6", name: "Cloud Servers", provider: "Cloud.ru", tags: ["VPS", "OpenStack", "152-ФЗ"], description: "Виртуальные машины на OpenStack с высокой доступностью и 152-ФЗ.", url: "https://cloud.ru/services/servers", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Гибкие виртуальные серверы с посекундной оплатой и соответствием 152-ФЗ.", priceScore: 8, taskMatchScore: 7, criteriaMatchScore: 8, pricing_elements: [
+    { description: "Cloud Servers, 1 vCPU + 1 ГБ RAM", uom: "час", price: 1.5 },
+    { description: "Cloud Servers, 2 vCPU + 4 ГБ RAM", uom: "час", price: 3.8 },
+    { description: "Cloud Servers, SSD диск", uom: "ГБ", price: 4 },
+    { description: "Cloud Servers, бэкапы", uom: "ГБ", price: 0.5 },
+  ] },
+];
+
+const MOCK_RESULTS_3: ServiceResult[] = [
+  { id: "r7", name: "Compute (Cloud Engine)", provider: "Т1 Облако", tags: ["VPS", "OpenStack", "152-ФЗ"], description: "Облачные ресурсы для создания масштабируемой вычислительной инфраструктуры на платформе OpenStack.", url: "https://t1-cloud.ru/services/compute", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Мощная вычислительная платформа с широкими возможностями кастомизации и полным комплаенсом.", priceScore: 7, taskMatchScore: 8, criteriaMatchScore: 7, pricing_elements: [
+    { description: "Compute, 1 vCPU + 2 ГБ RAM", uom: "час", price: 1.8 },
+    { description: "Compute, 4 vCPU + 8 ГБ RAM", uom: "час", price: 5.2 },
+    { description: "Compute, SSD диск", uom: "ГБ", price: 3 },
+  ] },
+  { id: "r8", name: "VPS (Virtual Private Server)", provider: "Selectel", tags: ["VPS", "VMware"], description: "Виртуальные серверы с выделенными ресурсами и быстрым масштабированием.", url: "https://selectel.ru/services/vps/", fz152: false, platform: "VMware", region: "Москва, Санкт-Петербург", rationale: "Доступные виртуальные серверы с быстрой сетью и гибкой конфигурацией без 152-ФЗ.", priceScore: 9, taskMatchScore: 6, criteriaMatchScore: 5, pricing_elements: [
+    { description: "VPS, 1 vCPU + 1 ГБ RAM", uom: "месяц", price: 350 },
+    { description: "VPS, 2 vCPU + 4 ГБ RAM", uom: "месяц", price: 750 },
+    { description: "VPS, SSD диск", uom: "ГБ", price: 2.5 },
+  ] },
+  { id: "r9", name: "Managed Databases", provider: "Yandex Cloud", tags: ["БД", "PostgreSQL", "MySQL"], description: "Управляемые БД PostgreSQL, MySQL, ClickHouse с авто-бэкапом и масштабированием.", url: "https://yandex.cloud/ru/services/managed-postgresql", fz152: false, region: "Москва, Владимирская обл.", rationale: "Широкий выбор СУБД с автоматическим масштабированием. Без 152-ФЗ, но с высокой отказоустойчивостью.", priceScore: 8, taskMatchScore: 8, criteriaMatchScore: 7, pricing_elements: [
+    { description: "PostgreSQL, 1 vCPU + 2 ГБ RAM", uom: "час", price: 2.2 },
+    { description: "PostgreSQL, SSD диск", uom: "ГБ", price: 3.5 },
+    { description: "PostgreSQL, бэкапы", uom: "ГБ", price: 0.8 },
+  ] },
+];
+
+const MOCK_SETS = [MOCK_RESULTS, MOCK_RESULTS_2, MOCK_RESULTS_3];
 
 // ---------- Score bar ----------
 function ScoreBar({ label, value }: { label: string; value: number }) {
@@ -248,7 +288,7 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>("catalog");
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
   const [input, setInput] = useState("");
-  const [results, setResults] = useState<ServiceResult[] | null>(null);
+  const [resultsHistory, setResultsHistory] = useState<Array<{ query: string; results: ServiceResult[] }>>([]);
   const [catalogServices, setCatalogServices] = useState<ServiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [dark, setDark] = useState(() => {
@@ -257,6 +297,8 @@ export default function App() {
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   const [awaitingClarification, setAwaitingClarification] = useState(false);
+  const [selectedResultIdx, setSelectedResultIdx] = useState(0);
+  const [showSearchHistory, setShowSearchHistory] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -285,10 +327,16 @@ export default function App() {
     if (loadingTimeout.current) clearTimeout(loadingTimeout.current);
     setPhase("catalog");
     setMessages([]);
-    setResults(null);
+    setResultsHistory([]);
+    setSelectedResultIdx(0);
     setIsLoading(false);
     setAwaitingClarification(false);
     pickCatalog();
+  }
+
+  function addResults(query: string, newResults: ServiceResult[]) {
+    setResultsHistory((prev) => [{ query, results: newResults }, ...prev]);
+    setSelectedResultIdx(0);
   }
 
   function handleCatalogSearch() {
@@ -301,19 +349,10 @@ export default function App() {
     loadingTimeout.current = setTimeout(() => {
       loadingTimeout.current = null;
       setMessages((prev) => [...prev, { role: "assistant", text: "Вот что удалось подобрать по вашему запросу:" }]);
-      setResults(MOCK_RESULTS);
+      addResults(text, MOCK_RESULTS);
       setIsLoading(false);
       setPhase("results");
     }, 1800);
-  }
-
-  function shuffleResults<T>(arr: T[]): T[] {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
   }
 
   function handleSend() {
@@ -326,15 +365,18 @@ export default function App() {
       loadingTimeout.current = setTimeout(() => {
         loadingTimeout.current = null;
         setMessages((prev) => [...prev, { role: "assistant", text: "Вот что удалось подобрать по вашему запросу:" }]);
-        setResults(MOCK_RESULTS);
+        addResults(text, MOCK_RESULTS);
         setIsLoading(false);
+        setAwaitingClarification(false);
         setPhase("results");
       }, 1800);
     } else {
       if (awaitingClarification) {
         loadingTimeout.current = setTimeout(() => {
           loadingTimeout.current = null;
-          setResults(shuffleResults(MOCK_RESULTS));
+          const setIndex = resultsHistory.length % MOCK_SETS.length;
+          addResults(text, MOCK_SETS[setIndex]);
+          setMessages((prev) => [...prev, { role: "assistant", text: "Вот результаты с учётом ваших уточнений:" }]);
           setIsLoading(false);
           setAwaitingClarification(false);
         }, 1800);
@@ -351,7 +393,9 @@ export default function App() {
       } else {
         loadingTimeout.current = setTimeout(() => {
           loadingTimeout.current = null;
-          setResults(shuffleResults(MOCK_RESULTS));
+          const setIndex = resultsHistory.length % MOCK_SETS.length;
+          addResults(text, MOCK_SETS[setIndex]);
+          setMessages((prev) => [...prev, { role: "assistant", text: "Вот обновлённые результаты с учётом ваших уточнений:" }]);
           setIsLoading(false);
         }, 1800);
       }
@@ -361,7 +405,8 @@ export default function App() {
   function handleNewChat() {
     if (loadingTimeout.current) clearTimeout(loadingTimeout.current);
     setMessages([]);
-    setResults(null);
+    setResultsHistory([]);
+    setSelectedResultIdx(0);
     setIsLoading(false);
     setAwaitingClarification(false);
     setPhase("chat");
@@ -484,7 +529,7 @@ export default function App() {
   if (phase === "chat") {
     return (
       <div className="h-screen flex flex-col bg-background transition-colors duration-300">
-        {results && (
+        {resultsHistory.length > 0 && (
           <div className="shrink-0 flex items-center justify-end px-5 py-2 border-b">
             <button onClick={goToResults} className="text-muted-foreground hover:text-foreground transition-colors" title="Свернуть чат">
               <Minimize2 className="w-5 h-5" />
@@ -543,42 +588,55 @@ export default function App() {
   }
 
   // =========================== RESULTS ===========================
+  const currentSet = resultsHistory[selectedResultIdx];
+
   return (
     <div className="h-screen flex flex-col bg-background transition-colors duration-300">
-      <div className="flex-1 overflow-y-auto">
-        {results && (
-          <div className="max-w-6xl mx-auto p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#1DAFF7] to-[#008ACD]" />
-              <h2 className="text-base font-bold tracking-tight">Результаты подбора</h2>
+      <div className="flex-1 flex overflow-hidden">
+        {resultsHistory.length > 0 && (
+          <div className={`shrink-0 border-r bg-card overflow-y-auto p-4 space-y-3 transition-all duration-200 ${showSearchHistory ? "w-60" : "w-auto"}`}>
+            <div className="flex items-center gap-2">
+              {!showSearchHistory && <div className="w-4" />}
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">История поиска</div>
+              <button onClick={() => setShowSearchHistory(v => !v)} className="text-muted-foreground hover:text-foreground transition-colors ml-auto">
+                {showSearchHistory ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </button>
             </div>
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="overflow-hidden flex flex-col">
-                    <div className="p-5 space-y-3">
-                      <Skeleton className="h-4 w-1/4" />
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                      <Skeleton className="h-20 w-full rounded-lg" />
-                      <Skeleton className="h-12 w-full rounded-lg" />
-                    </div>
-                  </Card>
-                ))}
+            {showSearchHistory && resultsHistory.map((entry, idx) => (
+              <button
+                key={idx}
+                onClick={() => setSelectedResultIdx(idx)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                  idx === selectedResultIdx
+                    ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <div className="line-clamp-2">{entry.query}</div>
+              </button>
+            ))}
+          </div>
+        )}
+          <div className="flex-1 overflow-y-auto">
+            {currentSet && (
+              <div className="max-w-6xl mx-auto p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#1DAFF7] to-[#008ACD]" />
+                <h2 className="text-base font-bold tracking-tight">Результаты подбора</h2>
+                {selectedResultIdx > 0 && (
+                  <span className="text-xs text-muted-foreground ml-2">(архивный)</span>
+                )}
               </div>
-            ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {results.map((res, idx) => (
+                {currentSet.results.map((res, idx) => (
                   <div key={res.id} className="flex animate-in fade-in duration-400" style={{ animationDelay: `${idx * 120}ms` }}>
                     <ResultCardFull result={res} rank={idx + 1} />
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div
