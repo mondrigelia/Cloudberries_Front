@@ -40,7 +40,7 @@ const PROVIDER_LOGOS: Record<string, string> = {
   "Т1 Облако": "https://t1-cloud.ru/favicon.ico",
   "Cloud.ru": "https://www.google.com/s2/favicons?domain=cloud.ru&sz=64",
   "Selectel": "https://selectel.ru/favicon.ico",
-  "VK Cloud": "https://cloud.vk.com/favicon.ico",
+  "VK Cloud": "https://www.google.com/s2/favicons?domain=cloud.vk.com&sz=64",
   "Yandex Cloud": "https://yandex.cloud/favicon.ico",
 };
 
