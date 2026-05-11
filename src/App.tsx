@@ -159,7 +159,7 @@ function MetricRow({ label, value, valueClass }: { label: string; value: string;
 function CatalogCard({ service }: { service: ServiceItem }) {
   return (
     <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col flex-1">
-      <div className="p-5 flex flex-col flex-1 gap-2">
+      <div className="p-4 sm:p-5 flex flex-col flex-1 gap-2">
         <h3 className="text-base font-bold leading-tight line-clamp-2">{service.name}</h3>
         <div className="flex items-center gap-2">
           <ProviderIcon provider={service.provider} size="sm" />
@@ -190,7 +190,7 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
   const style = RANK_STYLES[rank] || RANK_STYLES[3];
   return (
     <Card className={`overflow-hidden flex flex-col flex-1 ${style.border}`}>
-      <div className="p-5 flex flex-col gap-3 flex-1">
+      <div className="p-4 sm:p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-2">
           <span className={`text-lg font-black tracking-tight ${style.rankColor}`}>#{rank}</span>
           <ProviderIcon provider={result.provider} size="sm" />
@@ -436,17 +436,20 @@ export default function App() {
     return (
       <button onClick={goToCatalog} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
         <Cloud className="w-7 h-7 text-[#1DAFF7]" />
-        <span className="text-sm font-bold tracking-tight">Cloudberries</span>
+        <div className="flex flex-col items-start">
+          <span className="text-sm font-bold tracking-tight leading-tight">Cloudberries</span>
+          <span className="text-[10px] text-muted-foreground leading-tight hidden sm:block">Маркетплейс облачных находок</span>
+        </div>
       </button>
     );
   }
 
   function RightButtons({ showNewChat }: { showNewChat: boolean }) {
     return (
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {showNewChat && (
           <Button size="sm" onClick={handleNewChat}>
-            <Plus className="w-4 h-4" /> Новый чат
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый чат</span>
           </Button>
         )}
         <ThemeToggle />
@@ -458,8 +461,8 @@ export default function App() {
   if (phase === "catalog") {
     return (
       <div className="h-screen flex flex-col bg-background transition-colors duration-300">
-        <div className="flex-1 overflow-y-auto px-8 py-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {catalogServices.map((s, i) => (
               <div key={s.id} className="flex animate-in fade-in duration-300" style={{ animationDelay: `${i * 40}ms` }}>
                 <CatalogCard service={s} />
@@ -468,10 +471,10 @@ export default function App() {
           </div>
         </div>
 
-        <div className="shrink-0 border-t bg-card px-5 py-3">
+        <div className="shrink-0 border-t bg-card px-3 sm:px-5 py-3">
           <div className="flex items-center justify-between">
             <Logo />
-            <div className="flex-1 max-w-2xl mx-8 relative">
+            <div className="flex-1 max-w-2xl mx-2 sm:mx-8 relative">
               {showSuggestions && (
                 <div className="absolute bottom-full left-0 right-12 mb-2 flex gap-2 flex-wrap">
                   {["S3 хранилище до 3000 ₽", "VPS под 152-ФЗ", "Kubernetes"].map((hint) => (
@@ -536,33 +539,33 @@ export default function App() {
             </button>
           </div>
         )}
-        <div ref={chatRef} className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="max-w-3xl mx-auto space-y-4">
-            {messages.length === 0 ? null : (
-              messages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
-                  <div className={`max-w-[85%] lg:max-w-[70%] px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-br from-[#1DAFF7] to-[#008ACD] text-white rounded-2xl rounded-br-md shadow-lg shadow-[#1DAFF7]/20"
-                      : "bg-muted text-foreground rounded-2xl rounded-bl-md"
-                  }`}>
-                    {msg.text}
+        <div ref={chatRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-6">
+            <div className="max-w-3xl mx-auto space-y-4">
+              {messages.length === 0 ? null : (
+                messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
+                    <div className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[70%] px-3 py-2 sm:px-4 sm:py-3 text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-gradient-to-br from-[#1DAFF7] to-[#008ACD] text-white rounded-2xl rounded-br-md shadow-lg shadow-[#1DAFF7]/20"
+                        : "bg-muted text-foreground rounded-2xl rounded-bl-md"
+                    }`}>
+                      {msg.text}
+                    </div>
                   </div>
+                ))
+              )}
+              {isLoading && (
+                <div className="flex justify-start animate-in fade-in duration-200">
+                  <Skeleton className="h-10 sm:h-12 w-3/4 rounded-2xl rounded-bl-md" />
                 </div>
-              ))
-            )}
-            {isLoading && (
-              <div className="flex justify-start animate-in fade-in duration-200">
-                <Skeleton className="h-12 w-3/4 rounded-2xl rounded-bl-md" />
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="shrink-0 border-t bg-card px-5 py-3">
+        <div className="shrink-0 border-t bg-card px-3 sm:px-5 py-3">
           <div className="flex items-center justify-between">
             <Logo />
-            <div className="flex-1 max-w-2xl mx-8 flex gap-3">
+            <div className="flex-1 max-w-2xl mx-2 sm:mx-8 flex gap-3">
               <Textarea
                 value={input}
                 onChange={(e) => {
@@ -592,42 +595,76 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-background transition-colors duration-300">
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {resultsHistory.length > 0 && (
-          <div className={`shrink-0 border-r bg-card overflow-y-auto p-4 space-y-3 transition-all duration-200 ${showSearchHistory ? "w-60" : "w-auto"}`}>
-            <div className="flex items-center gap-2">
-              {!showSearchHistory && <div className="w-4" />}
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Прошлые подборки</div>
-              <button onClick={() => setShowSearchHistory(v => !v)} className="text-muted-foreground hover:text-foreground transition-colors ml-auto">
-                {showSearchHistory ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              </button>
+          <>
+            {/* Desktop sidebar */}
+            <div className={`shrink-0 border-r bg-card overflow-y-auto p-4 space-y-3 transition-all duration-200 hidden md:block ${showSearchHistory ? "w-60" : "w-auto"}`}>
+              <div className="flex items-center gap-2">
+                {!showSearchHistory && <div className="w-4" />}
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Прошлые подборки</div>
+                <button onClick={() => setShowSearchHistory(v => !v)} className="text-muted-foreground hover:text-foreground transition-colors ml-auto">
+                  {showSearchHistory ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+              </div>
+              {showSearchHistory && resultsHistory.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedResultIdx(idx)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                    idx === selectedResultIdx
+                      ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <div className="line-clamp-2">подбор {idx + 1}</div>
+                </button>
+              ))}
             </div>
-            {showSearchHistory && resultsHistory.map((entry, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedResultIdx(idx)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
-                  idx === selectedResultIdx
-                    ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <div className="line-clamp-2">{entry.query}</div>
-              </button>
-            ))}
-          </div>
+
+            {/* Mobile sidebar overlay */}
+            {showSearchHistory && (
+              <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowSearchHistory(false)}>
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                <div className="absolute left-0 top-0 bottom-0 w-64 bg-card border-r shadow-2xl p-4 space-y-3 overflow-y-auto animate-in slide-in-from-left duration-200" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Прошлые подборки</div>
+                    <button onClick={() => setShowSearchHistory(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {resultsHistory.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => { setSelectedResultIdx(idx); setShowSearchHistory(false); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                        idx === selectedResultIdx
+                          ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <div className="line-clamp-2">подбор {idx + 1}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
           <div className="flex-1 overflow-y-auto">
             {currentSet && (
-              <div className="max-w-6xl mx-auto p-5">
+              <div className="max-w-6xl mx-auto p-3 sm:p-5">
                 <div className="flex items-center gap-3 mb-4">
+                  <button onClick={() => setShowSearchHistory(v => !v)} className="md:hidden text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
                   <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#1DAFF7] to-[#008ACD]" />
                 <h2 className="text-base font-bold tracking-tight">Результаты подбора</h2>
                 {selectedResultIdx > 0 && (
                   <span className="text-xs text-muted-foreground ml-2">(архивный)</span>
                 )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {currentSet.results.map((res, idx) => (
                   <div key={res.id} className="flex animate-in fade-in duration-400" style={{ animationDelay: `${idx * 120}ms` }}>
                     <ResultCardFull result={res} rank={idx + 1} />
@@ -640,13 +677,13 @@ export default function App() {
       </div>
 
       <div
-        className="shrink-0 border-t bg-card px-5 py-3 relative"
+        className="shrink-0 border-t bg-card px-3 sm:px-5 py-3 relative"
         onMouseEnter={() => messages.length > 0 && setShowHistory(true)}
         onMouseLeave={() => setShowHistory(false)}
       >
         <div className="flex items-center justify-between">
           <Logo />
-          <div className="flex-1 max-w-2xl mx-8">
+          <div className="flex-1 max-w-2xl mx-2 sm:mx-8">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 {showHistory && messages.length > 0 && (
