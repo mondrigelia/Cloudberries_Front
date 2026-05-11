@@ -29,6 +29,12 @@ interface ServiceResult extends ServiceItem {
 
 type Phase = "catalog" | "chat" | "results";
 
+interface HistoryEntry {
+  query: string;
+  results: ServiceResult[];
+  messages: { role: "user" | "assistant"; text: string }[];
+}
+
 // ---------- Provider assets ----------
 const PROVIDER_LOGOS: Record<string, string> = {
   "Т1 Облако": "https://t1-cloud.ru/favicon.ico",
@@ -288,7 +294,7 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>("catalog");
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
   const [input, setInput] = useState("");
-  const [resultsHistory, setResultsHistory] = useState<Array<{ query: string; results: ServiceResult[] }>>([]);
+  const [resultsHistory, setResultsHistory] = useState<HistoryEntry[]>([]);
   const [catalogServices, setCatalogServices] = useState<ServiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [dark, setDark] = useState(() => {
@@ -331,12 +337,23 @@ export default function App() {
     setSelectedResultIdx(0);
     setIsLoading(false);
     setAwaitingClarification(false);
+    setShowSearchHistory(true);
     pickCatalog();
   }
 
-  function addResults(query: string, newResults: ServiceResult[]) {
-    setResultsHistory((prev) => [{ query, results: newResults }, ...prev]);
+  function addResults(query: string, newResults: ServiceResult[], msgs: { role: "user" | "assistant"; text: string }[]) {
+    setResultsHistory((prev) => [{ query, results: newResults, messages: msgs }, ...prev]);
     setSelectedResultIdx(0);
+  }
+
+  function updateCurrentEntry(results: ServiceResult[], msgs: { role: "user" | "assistant"; text: string }[]) {
+    setResultsHistory((prev) => {
+      const updated = [...prev];
+      if (updated[selectedResultIdx]) {
+        updated[selectedResultIdx] = { ...updated[selectedResultIdx], results, messages: msgs };
+      }
+      return updated;
+    });
   }
 
   function handleCatalogSearch() {
@@ -348,9 +365,11 @@ export default function App() {
     setPhase("chat");
     loadingTimeout.current = setTimeout(() => {
       loadingTimeout.current = null;
-      setMessages((prev) => [...prev, { role: "assistant", text: "Вот что удалось подобрать по вашему запросу:" }]);
-      addResults(text, MOCK_RESULTS);
+      const newMsg = { role: "assistant" as const, text: "Вот что удалось подобрать по вашему запросу:" };
+      setMessages((prev) => [...prev, newMsg]);
+      setTimeout(() => addResults(text, MOCK_RESULTS, [...messages, { role: "user" as const, text }, newMsg]), 0);
       setIsLoading(false);
+      setAwaitingClarification(false);
       setPhase("results");
     }, 1800);
   }
@@ -359,54 +378,62 @@ export default function App() {
     if (!input.trim() || isLoading) return;
     const text = input;
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    const userMsg = { role: "user" as const, text };
+    setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
     if (phase === "chat") {
       loadingTimeout.current = setTimeout(() => {
         loadingTimeout.current = null;
-        setMessages((prev) => [...prev, { role: "assistant", text: "Вот что удалось подобрать по вашему запросу:" }]);
-        addResults(text, MOCK_RESULTS);
+        const assistMsg = { role: "assistant" as const, text: "Вот что удалось подобрать по вашему запросу:" };
+        setMessages((prev) => [...prev, assistMsg]);
+        setTimeout(() => addResults(text, MOCK_RESULTS, [...messages, userMsg, assistMsg]), 0);
         setIsLoading(false);
         setAwaitingClarification(false);
         setPhase("results");
       }, 1800);
     } else {
+      // Results phase — refine current entry in place
       if (awaitingClarification) {
         loadingTimeout.current = setTimeout(() => {
           loadingTimeout.current = null;
+          const assistMsg = { role: "assistant" as const, text: "Вот результаты с учётом ваших уточнений:" };
+          setMessages((prev) => [...prev, assistMsg]);
           const setIndex = resultsHistory.length % MOCK_SETS.length;
-          addResults(text, MOCK_SETS[setIndex]);
-          setMessages((prev) => [...prev, { role: "assistant", text: "Вот результаты с учётом ваших уточнений:" }]);
+          const allMsgs = [...messages, userMsg, assistMsg];
+          updateCurrentEntry(MOCK_SETS[setIndex], allMsgs);
           setIsLoading(false);
           setAwaitingClarification(false);
         }, 1800);
       } else if (text.length < 20) {
         loadingTimeout.current = setTimeout(() => {
           loadingTimeout.current = null;
-          setMessages((prev) => [...prev, {
-            role: "assistant",
+          const assistMsg = {
+            role: "assistant" as const,
             text: "Уточните, пожалуйста, какой бюджет вы рассматриваете и требуются ли вам соответствие 152-ФЗ?"
-          }]);
+          };
+          setMessages((prev) => [...prev, assistMsg]);
+          const allMsgs = [...messages, userMsg, assistMsg];
+          updateCurrentEntry(resultsHistory[selectedResultIdx]?.results || [], allMsgs);
           setIsLoading(false);
           setAwaitingClarification(true);
         }, 1000);
       } else {
         loadingTimeout.current = setTimeout(() => {
           loadingTimeout.current = null;
+          const assistMsg = { role: "assistant" as const, text: "Вот обновлённые результаты с учётом ваших уточнений:" };
+          setMessages((prev) => [...prev, assistMsg]);
           const setIndex = resultsHistory.length % MOCK_SETS.length;
-          addResults(text, MOCK_SETS[setIndex]);
-          setMessages((prev) => [...prev, { role: "assistant", text: "Вот обновлённые результаты с учётом ваших уточнений:" }]);
+          const allMsgs = [...messages, userMsg, assistMsg];
+          updateCurrentEntry(MOCK_SETS[setIndex], allMsgs);
           setIsLoading(false);
         }, 1800);
       }
     }
   }
 
-  function handleNewChat() {
+  function handleNewSearch() {
     if (loadingTimeout.current) clearTimeout(loadingTimeout.current);
     setMessages([]);
-    setResultsHistory([]);
-    setSelectedResultIdx(0);
     setIsLoading(false);
     setAwaitingClarification(false);
     setPhase("chat");
@@ -448,8 +475,8 @@ export default function App() {
     return (
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {showNewChat && (
-          <Button size="sm" onClick={handleNewChat}>
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый чат</span>
+          <Button size="sm" onClick={handleNewSearch}>
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый подбор</span>
           </Button>
         )}
         <ThemeToggle />
@@ -607,17 +634,17 @@ export default function App() {
                   {showSearchHistory ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                 </button>
               </div>
-              {showSearchHistory && resultsHistory.map((_, idx) => (
+              {showSearchHistory && resultsHistory.map((entry, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setSelectedResultIdx(idx)}
+                  onClick={() => { setSelectedResultIdx(idx); setMessages(resultsHistory[idx].messages); }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
                     idx === selectedResultIdx
                       ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  <div className="line-clamp-2">подбор {idx + 1}</div>
+                  <div className="line-clamp-2">{entry.query}</div>
                 </button>
               ))}
             </div>
@@ -633,17 +660,17 @@ export default function App() {
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                   </div>
-                  {resultsHistory.map((_, idx) => (
+                  {resultsHistory.map((entry, idx) => (
                     <button
                       key={idx}
-                      onClick={() => { setSelectedResultIdx(idx); setShowSearchHistory(false); }}
+                      onClick={() => { setSelectedResultIdx(idx); setMessages(resultsHistory[idx].messages); setShowSearchHistory(false); }}
                       className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
                         idx === selectedResultIdx
                           ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
-                      <div className="line-clamp-2">подбор {idx + 1}</div>
+                      <div className="line-clamp-2">{entry.query}</div>
                     </button>
                   ))}
                 </div>
