@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink } from "lucide-react";
+import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink, Maximize2 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Textarea } from "./components/ui/textarea";
 import { Card } from "./components/ui/card";
@@ -109,7 +109,7 @@ function CatalogCard({ service }: { service: ServiceItem }) {
           Подробнее <ExternalLink className="w-3 h-3" />
         </a>
         <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 border">
-          <MetricRow label="152-ФЗ" value={service.fz152 ? "Да" : "Нет"} valueClass={!service.fz152 ? "text-red-500 dark:text-red-400" : ""} />
+          <MetricRow label="152-ФЗ" value={service.fz152 ? "Да" : "Нет"} valueClass={service.fz152 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"} />
           {service.tags.includes("VPS") && service.platform && <MetricRow label="Платформа" value={service.platform} />}
           <MetricRow label="Регионы" value={service.region} />
         </div>
@@ -165,7 +165,7 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
 }
 
 // ========== HISTORY OVERLAY ==========
-function HistoryOverlay({ messages }: { messages: { role: string; text: string }[] }) {
+function HistoryOverlay({ messages, onExpand }: { messages: { role: string; text: string }[]; onExpand?: () => void }) {
   const overlayChatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -178,6 +178,11 @@ function HistoryOverlay({ messages }: { messages: { role: string; text: string }
     <div className="absolute bottom-full left-0 right-0 mb-2 bg-card rounded-2xl shadow-xl ring-1 ring-border overflow-hidden">
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">История чата</span>
+        {onExpand && (
+          <button onClick={onExpand} className="text-muted-foreground hover:text-foreground transition-colors">
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
       <div ref={overlayChatRef} className="px-3 pb-2 max-h-72 overflow-y-auto space-y-1.5">
         {messages.length === 0 ? (
@@ -321,6 +326,10 @@ export default function App() {
     setResults(null);
     setIsLoading(false);
     setAwaitingClarification(false);
+    setPhase("chat");
+  }
+
+  function showFullChat() {
     setPhase("chat");
   }
 
@@ -530,26 +539,29 @@ export default function App() {
       >
         <div className="flex items-center justify-between">
           <Logo />
-          <div className="flex-1 max-w-2xl mx-8 relative">
-            {showHistory && messages.length > 0 && (
-              <HistoryOverlay
-                messages={messages}
-              />
-            )}
+          <div className="flex-1 max-w-2xl mx-8">
             <div className="flex gap-3">
-              <Textarea
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = e.target.scrollHeight + "px";
-                }}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Дополните или уточните запрос..."
-                disabled={isLoading}
-                rows={1}
-                className="flex-1 text-foreground"
-              />
+              <div className="flex-1 relative">
+                {showHistory && messages.length > 0 && (
+                  <HistoryOverlay
+                    messages={messages}
+                    onExpand={showFullChat}
+                  />
+                )}
+                <Textarea
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = e.target.scrollHeight + "px";
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  placeholder="Дополните или уточните запрос..."
+                  disabled={isLoading}
+                  rows={1}
+                  className="flex-1 text-foreground"
+                />
+              </div>
               <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="w-12 h-12 shrink-0">
                 <Send className="w-5 h-5" />
               </Button>
