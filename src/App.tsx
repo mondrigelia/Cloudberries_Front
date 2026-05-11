@@ -1,12 +1,32 @@
 import { useState, useEffect, useRef } from "react";
-import { Cloud, Send, Plus, Sun, Moon, Search } from "lucide-react";
+import { Cloud, Send, Plus, Sun, Moon, Search, ExternalLink } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Textarea } from "./components/ui/textarea";
 import { Card } from "./components/ui/card";
 import { Badge } from "./components/ui/badge";
 import { Skeleton } from "./components/ui/skeleton";
-import type { ServiceItem, ServiceResult } from "./api";
-import { getSessionId, resetSessionId, fetchServices, fetchSession, sendChatMessage, shuffleTake } from "./api";
+
+// ---------- Types ----------
+interface ServiceItem {
+  id: string;
+  name: string;
+  provider: string;
+  tags: string[];
+  description: string;
+  url: string;
+  fz152: boolean;
+  platform?: string;
+  region: string;
+}
+
+interface ServiceResult extends ServiceItem {
+  rationale: string;
+  priceScore: number;
+  taskMatchScore: number;
+  criteriaMatchScore: number;
+}
+
+type Phase = "catalog" | "chat" | "results";
 
 // ---------- Provider assets ----------
 const PROVIDER_LOGOS: Record<string, string> = {
@@ -28,15 +48,54 @@ function ProviderIcon({ provider, size = "md" }: { provider: string; size?: "sm"
   );
 }
 
-// ---------- Helpers ----------
-function minPrice(elements: ServiceItem["pricing_elements"]): number | null {
-  if (!elements || elements.length === 0) return null;
-  return Math.min(...elements.map((e) => e.price));
+// ---------- Mock data ----------
+const ALL_SERVICES: ServiceItem[] = [
+  { id: "1", name: "Compute (Cloud Engine)", provider: "Т1 Облако", tags: ["VPS", "OpenStack", "152-ФЗ"], description: "Облачные ресурсы для создания масштабируемой вычислительной инфраструктуры, администрирования и сопровождения сервисов на платформе OpenStack.", url: "https://t1-cloud.ru/services/compute", fz152: true, platform: "OpenStack", region: "Москва" },
+  { id: "2", name: "Объектное хранилище S3", provider: "Т1 Облако", tags: ["S3", "152-ФЗ", "OpenStack"], description: "S3-совместимое объектное хранилище с мультизональным размещением для файлов, статики, бэкапов и архивов.", url: "https://t1-cloud.ru/services/s3", fz152: true, platform: "OpenStack", region: "Москва" },
+  { id: "3", name: "Managed Kubernetes", provider: "Т1 Облако", tags: ["K8s", "152-ФЗ", "OpenStack"], description: "Управляемый кластер Kubernetes с автоскейлингом и интеграцией в OpenStack.", url: "https://t1-cloud.ru/services/kubernetes", fz152: true, platform: "OpenStack", region: "Москва" },
+  { id: "4", name: "Managed PostgreSQL", provider: "Т1 Облако", tags: ["БД", "PostgreSQL", "152-ФЗ"], description: "DBaaS на базе PostgreSQL с автоматическим бэкапом, репликацией и мониторингом.", url: "https://t1-cloud.ru/services/postgresql", fz152: true, platform: "OpenStack", region: "Москва" },
+  { id: "5", name: "Evolution Object Storage", provider: "Cloud.ru", tags: ["S3", "152-ФЗ", "Multi-AZ"], description: "Масштабируемое S3-хранилище с автоматическим масштабированием, версионированием и AWS S3 API.", url: "https://cloud.ru/services/object-storage", fz152: true, region: "Москва" },
+  { id: "6", name: "Cloud Servers", provider: "VK Cloud", tags: ["VPS", "VMware"], description: "Виртуальные серверы с быстрой сетью и гибкими конфигурациями.", url: "https://cloud.vk.com/services/servers", fz152: false, platform: "VMware", region: "Москва, Санкт-Петербург" },
+  { id: "7", name: "S3-хранилище", provider: "Selectel", tags: ["S3", "холодное хранение"], description: "Объектное хранилище с горячим и холодным классами для бэкапов и архивов.", url: "https://selectel.ru/services/storage/s3/", fz152: false, region: "Москва, Санкт-Петербург" },
+  { id: "8", name: "Compute Cloud", provider: "Yandex Cloud", tags: ["VPS", "посекундная оплата"], description: "Виртуальные машины с посекундной оплатой и интеграцией с сервисами Yandex Cloud.", url: "https://yandex.cloud/ru/services/compute", fz152: false, region: "Москва, Владимирская обл." },
+  { id: "9", name: "Managed Databases", provider: "Yandex Cloud", tags: ["БД", "PostgreSQL", "MySQL"], description: "Управляемые БД PostgreSQL, MySQL, ClickHouse с авто-бэкапом и масштабированием.", url: "https://yandex.cloud/ru/services/managed-postgresql", fz152: false, region: "Москва, Владимирская обл." },
+  { id: "10", name: "Cloud Storage", provider: "VK Cloud", tags: ["S3", "Hotbox", "Icebox"], description: "Объектное хранилище с горячим и холодным классами.", url: "https://cloud.vk.com/services/storage", fz152: false, region: "Москва, Санкт-Петербург" },
+  { id: "11", name: "VPS (Virtual Private Server)", provider: "Selectel", tags: ["VPS", "VMware"], description: "Виртуальные серверы с выделенными ресурсами и быстрым масштабированием.", url: "https://selectel.ru/services/vps/", fz152: false, platform: "VMware", region: "Москва, Санкт-Петербург" },
+  { id: "12", name: "Cloud Servers", provider: "Cloud.ru", tags: ["VPS", "OpenStack", "152-ФЗ"], description: "Виртуальные машины на OpenStack с высокой доступностью и 152-ФЗ.", url: "https://cloud.ru/services/servers", fz152: true, platform: "OpenStack", region: "Москва" },
+];
+
+const MOCK_RESULTS: ServiceResult[] = [
+  { id: "r1", name: "Объектное хранилище S3", provider: "Т1 Облако", tags: ["S3", "152-ФЗ", "OpenStack"], description: "S3-хранилище с мультизональным размещением и интеграцией с OpenStack.", url: "https://t1-cloud.ru/services/s3", fz152: true, platform: "OpenStack", region: "Москва", rationale: "Наиболее выгодное предложение в заданном бюджете (2000 руб/мес). Полное соответствие 152-ФЗ, мультизональный S3 повышает надёжность.", priceScore: 9, taskMatchScore: 9, criteriaMatchScore: 8 },
+  { id: "r2", name: "Evolution Object Storage", provider: "Cloud.ru", tags: ["S3", "152-ФЗ", "Multi-AZ"], description: "S3-хранилище от Cloud.ru с версионированием и совместимостью S3 API.", url: "https://cloud.ru/services/object-storage", fz152: true, region: "Москва", rationale: "Отличная альтернатива с мощным функционалом. Дороже Т1, но предоставляет больше гибкости и глобальную CDN.", priceScore: 8, taskMatchScore: 10, criteriaMatchScore: 9 },
+  { id: "r3", name: "Cloud Storage", provider: "VK Cloud", tags: ["S3", "Hotbox", "Icebox"], description: "Объектное хранилище VK Cloud с горячим и холодным классами.", url: "https://cloud.vk.com/services/storage", fz152: false, region: "Москва, Санкт-Петербург", rationale: "Самое бюджетное решение при больших объёмах. Без официального статуса 152-ФЗ.", priceScore: 10, taskMatchScore: 7, criteriaMatchScore: 6 },
+];
+
+// ---------- Score bar ----------
+function ScoreBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-muted-foreground font-medium">{label}</span>
+        <span className="font-bold tabular-nums">{value}/10</span>
+      </div>
+      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-[#1DAFF7] to-[#008ACD] rounded-full transition-all duration-700" style={{ width: `${(value / 10) * 100}%` }} />
+      </div>
+    </div>
+  );
 }
 
-// ---------- CATALOG CARD ----------
+function MetricRow({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="flex justify-between items-center gap-2">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={`font-semibold text-right text-xs leading-tight ${valueClass || ""}`}>{value}</span>
+    </div>
+  );
+}
+
+// ========== CATALOG CARD ==========
 function CatalogCard({ service }: { service: ServiceItem }) {
-  const cheapest = minPrice(service.pricing_elements);
   return (
     <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col flex-1">
       <div className="p-5 flex flex-col flex-1 gap-2">
@@ -46,31 +105,20 @@ function CatalogCard({ service }: { service: ServiceItem }) {
           <span className="text-xs font-medium text-muted-foreground">{service.provider}</span>
         </div>
         <p className="text-xs leading-relaxed text-muted-foreground line-clamp-3">{service.description}</p>
-        {service.compliance_tags.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap">
-            {service.compliance_tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/30 dark:to-blue-900/30 text-[#1DAFF7] border-sky-100/50 dark:border-sky-700/30">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <a href={service.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-[#1DAFF7] hover:text-[#008ACD] transition-colors">
+          Подробнее <ExternalLink className="w-3 h-3" />
+        </a>
         <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 border">
-          <span className="text-xs text-muted-foreground">
-            Регионы: {service.regions.join(", ")}
-          </span>
-          {cheapest !== null && (
-            <span className="text-xs text-muted-foreground block">
-              от {cheapest} ₽
-            </span>
-          )}
+          <MetricRow label="152-ФЗ" value={service.fz152 ? "Да" : "Нет"} valueClass={!service.fz152 ? "text-red-500 dark:text-red-400" : ""} />
+          {service.tags.includes("VPS") && service.platform && <MetricRow label="Платформа" value={service.platform} />}
+          <MetricRow label="Регионы" value={service.region} />
         </div>
       </div>
     </Card>
   );
 }
 
-// ---------- RESULT CARD ----------
+// ========== RESULT CARD ==========
 function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number }) {
   return (
     <Card className="overflow-hidden flex flex-col flex-1">
@@ -81,33 +129,35 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
           <span className="text-xs font-medium text-muted-foreground">{result.provider}</span>
         </div>
         <h3 className="text-sm font-bold leading-tight">{result.name}</h3>
-        <p className="text-xs leading-relaxed italic text-muted-foreground">{result.rationale}</p>
-        {result.matched_keywords.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-medium text-muted-foreground">Совпало:</span>
-            {result.matched_keywords.map((kw) => (
-              <Badge key={kw} variant="outline" className="text-[10px] px-2 py-0.5 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30">
-                {kw}
-              </Badge>
-            ))}
-          </div>
-        )}
-        {Object.keys(result.scores).length > 0 && (
-          <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 border">
-            {Object.entries(result.scores).map(([label, value]) => (
-              <div key={label} className="flex justify-between items-center text-xs">
-                <span className="font-medium text-muted-foreground">{label}</span>
-                <span className="font-bold text-[#1DAFF7]">{value}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <p className="text-xs leading-relaxed text-muted-foreground line-clamp-3">{result.description}</p>
+        <a href={result.url} target="_blank" rel="noreferrer" className="text-xs font-medium text-[#1DAFF7] hover:text-[#008ACD] inline-flex items-center gap-1 transition-colors">
+          Подробнее <ExternalLink className="w-3 h-3" />
+        </a>
+        <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 border">
+          <MetricRow label="152-ФЗ" value={result.fz152 ? "Да" : "Нет"} valueClass={result.fz152 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"} />
+          {result.platform && <MetricRow label="Платформа" value={result.platform} />}
+          <MetricRow label="Регионы" value={result.region} />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {result.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/30 dark:to-blue-900/30 text-[#1DAFF7] border-sky-100/50 dark:border-sky-700/30">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground flex-1">{result.rationale}</p>
+        <div className="bg-muted/50 rounded-lg p-3 space-y-2 border">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Скоринг</div>
+          <ScoreBar label="Цена" value={result.priceScore} />
+          <ScoreBar label="Соответствие задаче" value={result.taskMatchScore} />
+          <ScoreBar label="Соответствие критериям" value={result.criteriaMatchScore} />
+        </div>
       </div>
     </Card>
   );
 }
 
-// ---------- HISTORY OVERLAY ----------
+// ========== HISTORY OVERLAY ==========
 function HistoryOverlay({ messages }: { messages: { role: string; text: string }[] }) {
   const overlayChatRef = useRef<HTMLDivElement>(null);
 
@@ -145,120 +195,126 @@ function HistoryOverlay({ messages }: { messages: { role: string; text: string }
 
 // ========== MAIN APP ==========
 export default function App() {
-  const [phase, setPhase] = useState<"catalog" | "chat" | "results">("catalog");
+  const [phase, setPhase] = useState<Phase>("catalog");
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
   const [input, setInput] = useState("");
   const [results, setResults] = useState<ServiceResult[] | null>(null);
   const [catalogServices, setCatalogServices] = useState<ServiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState("");
   const [dark, setDark] = useState(() => {
     const stored = localStorage.getItem("theme");
     if (stored) return stored === "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
+  const [awaitingClarification, setAwaitingClarification] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
-  const assistantTextRef = useRef("");
-  const currentAbort = useRef<AbortController | null>(null);
+  const loadingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
+  useEffect(() => { pickCatalog(); }, []);
+
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
-    async function init() {
-      const sid = getSessionId();
-      setSessionId(sid);
-
-      try {
-        const [allServices, session] = await Promise.all([
-          fetchServices(),
-          fetchSession(sid).catch(() => null),
-        ]);
-
-        setCatalogServices(shuffleTake(allServices, 9));
-
-        if (session) {
-          setMessages(session.messages);
-          if (session.results.length > 0) {
-            setResults(session.results);
-            setPhase("results");
-          } else if (session.messages.length > 0) {
-            setPhase("chat");
-          }
-        }
-      } catch {
-        // API unavailable — show empty catalog
-      }
-    }
-    init();
+    return () => { if (loadingTimeout.current) clearTimeout(loadingTimeout.current); };
   }, []);
 
-  function startSearch(text: string) {
-    if (isLoading || !text.trim()) return;
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", text }]);
-    setIsLoading(true);
-
-    if (phase === "catalog") setPhase("chat");
-
-    if (currentAbort.current) currentAbort.current.abort();
-    const controller = new AbortController();
-    currentAbort.current = controller;
-
-    const accumulated: ServiceResult[] = [];
-    assistantTextRef.current = "";
-
-    sendChatMessage(sessionId, text, {
-      onSearchResult: (service) => { accumulated.push(service); },
-      onToken: (token) => { assistantTextRef.current = token; },
-      onDone: () => {
-        setMessages((prev) => [...prev, { role: "assistant", text: assistantTextRef.current }]);
-        setResults(accumulated);
-        setIsLoading(false);
-        setPhase("results");
-      },
-      onError: (errorText) => {
-        setMessages((prev) => [...prev, { role: "assistant", text: errorText }]);
-        setIsLoading(false);
-      },
-    }, controller.signal).catch((err: unknown) => {
-      if (err instanceof Error && err.name === "AbortError") return;
-      setMessages((prev) => [...prev, { role: "assistant", text: "Ошибка соединения с сервером" }]);
-      setIsLoading(false);
-    });
-  }
-
-  function handleCatalogSearch() {
-    startSearch(input);
-  }
-
-  function handleSend() {
-    startSearch(input);
-  }
-
-  function handleNewChat() {
-    if (currentAbort.current) currentAbort.current.abort();
-    const newId = resetSessionId();
-    setSessionId(newId);
-    setMessages([]);
-    setResults(null);
-    setIsLoading(false);
-    setPhase("catalog");
+  function pickCatalog() {
+    setCatalogServices([...ALL_SERVICES].sort(() => 0.5 - Math.random()).slice(0, 9));
   }
 
   function goToCatalog() {
-    if (currentAbort.current) currentAbort.current.abort();
+    if (loadingTimeout.current) clearTimeout(loadingTimeout.current);
     setPhase("catalog");
+    setMessages([]);
     setResults(null);
     setIsLoading(false);
+    setAwaitingClarification(false);
+    pickCatalog();
+  }
+
+  function handleCatalogSearch() {
+    if (!input.trim() || isLoading) return;
+    const text = input;
+    setInput("");
+    setMessages([{ role: "user", text }]);
+    setIsLoading(true);
+    setPhase("chat");
+    loadingTimeout.current = setTimeout(() => {
+      loadingTimeout.current = null;
+      setMessages((prev) => [...prev, { role: "assistant", text: "Вот что удалось подобрать по вашему запросу:" }]);
+      setResults(MOCK_RESULTS);
+      setIsLoading(false);
+      setPhase("results");
+    }, 1800);
+  }
+
+  function shuffleResults<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function handleSend() {
+    if (!input.trim() || isLoading) return;
+    const text = input;
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", text }]);
+    setIsLoading(true);
+    if (phase === "chat") {
+      loadingTimeout.current = setTimeout(() => {
+        loadingTimeout.current = null;
+        setMessages((prev) => [...prev, { role: "assistant", text: "Вот что удалось подобрать по вашему запросу:" }]);
+        setResults(MOCK_RESULTS);
+        setIsLoading(false);
+        setPhase("results");
+      }, 1800);
+    } else {
+      if (awaitingClarification) {
+        loadingTimeout.current = setTimeout(() => {
+          loadingTimeout.current = null;
+          setResults(shuffleResults(MOCK_RESULTS));
+          setIsLoading(false);
+          setAwaitingClarification(false);
+        }, 1800);
+      } else if (text.length < 20) {
+        loadingTimeout.current = setTimeout(() => {
+          loadingTimeout.current = null;
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            text: "Уточните, пожалуйста, какой бюджет вы рассматриваете и требуются ли вам соответствие 152-ФЗ?"
+          }]);
+          setIsLoading(false);
+          setAwaitingClarification(true);
+        }, 1000);
+      } else {
+        loadingTimeout.current = setTimeout(() => {
+          loadingTimeout.current = null;
+          setResults(shuffleResults(MOCK_RESULTS));
+          setIsLoading(false);
+        }, 1800);
+      }
+    }
+  }
+
+  function handleNewChat() {
+    if (loadingTimeout.current) clearTimeout(loadingTimeout.current);
+    setMessages([]);
+    setResults(null);
+    setIsLoading(false);
+    setAwaitingClarification(false);
+    setPhase("chat");
   }
 
   function ThemeToggle() {
