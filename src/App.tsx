@@ -307,6 +307,7 @@ export default function App() {
   const [showSearchHistory, setShowSearchHistory] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isNewSearch, setIsNewSearch] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const loadingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -361,6 +362,7 @@ export default function App() {
     const text = input;
     setInput("");
     setMessages([{ role: "user", text }]);
+    setIsNewSearch(true);
     setIsLoading(true);
     setPhase("chat");
     loadingTimeout.current = setTimeout(() => {
@@ -369,6 +371,7 @@ export default function App() {
       setMessages((prev) => [...prev, newMsg]);
       setTimeout(() => addResults(text, MOCK_RESULTS, [...messages, { role: "user" as const, text }, newMsg]), 0);
       setIsLoading(false);
+      setIsNewSearch(false);
       setAwaitingClarification(false);
       setPhase("results");
     }, 1800);
@@ -381,18 +384,19 @@ export default function App() {
     const userMsg = { role: "user" as const, text };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
-    if (phase === "chat") {
+    if (phase === "chat" && isNewSearch) {
       loadingTimeout.current = setTimeout(() => {
         loadingTimeout.current = null;
         const assistMsg = { role: "assistant" as const, text: "Вот что удалось подобрать по вашему запросу:" };
         setMessages((prev) => [...prev, assistMsg]);
         setTimeout(() => addResults(text, MOCK_RESULTS, [...messages, userMsg, assistMsg]), 0);
         setIsLoading(false);
+        setIsNewSearch(false);
         setAwaitingClarification(false);
         setPhase("results");
       }, 1800);
     } else {
-      // Results phase — refine current entry in place
+      // Results phase or expanded chat — refine current entry in place
       if (awaitingClarification) {
         loadingTimeout.current = setTimeout(() => {
           loadingTimeout.current = null;
@@ -403,6 +407,7 @@ export default function App() {
           updateCurrentEntry(MOCK_SETS[setIndex], allMsgs);
           setIsLoading(false);
           setAwaitingClarification(false);
+          if (phase === "chat") setPhase("results");
         }, 1800);
       } else if (text.length < 20) {
         loadingTimeout.current = setTimeout(() => {
@@ -416,6 +421,7 @@ export default function App() {
           updateCurrentEntry(resultsHistory[selectedResultIdx]?.results || [], allMsgs);
           setIsLoading(false);
           setAwaitingClarification(true);
+          if (phase === "chat") setPhase("results");
         }, 1000);
       } else {
         loadingTimeout.current = setTimeout(() => {
@@ -426,6 +432,7 @@ export default function App() {
           const allMsgs = [...messages, userMsg, assistMsg];
           updateCurrentEntry(MOCK_SETS[setIndex], allMsgs);
           setIsLoading(false);
+          if (phase === "chat") setPhase("results");
         }, 1800);
       }
     }
@@ -436,10 +443,12 @@ export default function App() {
     setMessages([]);
     setIsLoading(false);
     setAwaitingClarification(false);
+    setIsNewSearch(true);
     setPhase("chat");
   }
 
   function showFullChat() {
+    setIsNewSearch(false);
     setPhase("chat");
   }
 
@@ -559,9 +568,17 @@ export default function App() {
   if (phase === "chat") {
     return (
       <div className="h-screen flex flex-col bg-background transition-colors duration-300">
-        {resultsHistory.length > 0 && (
+        {resultsHistory.length > 0 && !isNewSearch && (
           <div className="shrink-0 flex items-center justify-end px-5 py-2 border-b">
             <button onClick={goToResults} className="text-muted-foreground hover:text-foreground transition-colors" title="Свернуть чат">
+              <Minimize2 className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+        {isNewSearch && (
+          <div className="shrink-0 flex items-center px-5 py-2 border-b gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Новый подбор</span>
+            <button onClick={goToResults} className="text-muted-foreground hover:text-foreground transition-colors ml-auto" title="Назад к результатам">
               <Minimize2 className="w-5 h-5" />
             </button>
           </div>
