@@ -165,7 +165,7 @@ function MetricRow({ label, value, valueClass }: { label: string; value: string;
 function CatalogCard({ service }: { service: ServiceItem }) {
   return (
     <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col flex-1">
-      <div className="p-4 sm:p-5 flex flex-col flex-1 gap-2">
+      <div className="p-3 sm:p-5 flex flex-col flex-1 gap-2">
         <h3 className="text-base font-bold leading-tight line-clamp-2">{service.name}</h3>
         <div className="flex items-center gap-2">
           <ProviderIcon provider={service.provider} size="sm" />
@@ -196,7 +196,7 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
   const style = RANK_STYLES[rank] || RANK_STYLES[3];
   return (
     <Card className={`overflow-hidden flex flex-col flex-1 ${style.border}`}>
-      <div className="p-4 sm:p-5 flex flex-col gap-3 flex-1">
+      <div className="p-3 sm:p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-center gap-2">
           <span className={`text-lg font-black tracking-tight ${style.rankColor}`}>#{rank}</span>
           <ProviderIcon provider={result.provider} size="sm" />
@@ -460,10 +460,10 @@ export default function App() {
     return (
       <button
         onClick={() => setDark(!dark)}
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground bg-secondary hover:bg-accent transition-colors shrink-0"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-muted-foreground bg-secondary hover:bg-accent transition-colors shrink-0"
         title={dark ? "Светлая тема" : "Тёмная тема"}
       >
-        {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        {dark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
       </button>
     );
   }
@@ -484,11 +484,35 @@ export default function App() {
     return (
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {showNewChat && (
-          <Button size="sm" onClick={handleNewSearch}>
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Новый подбор</span>
+          <Button size="sm" onClick={handleNewSearch} className="h-8 sm:h-9">
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Подбор сервиса</span>
           </Button>
         )}
         <ThemeToggle />
+      </div>
+    );
+  }
+
+  function MobileHeader({ title, onToggleSidebar }: { title: string; onToggleSidebar?: () => void }) {
+    return (
+      <div className="flex sm:hidden items-center justify-between px-4 py-2 border-b bg-card shrink-0" style={{ paddingTop: "env(safe-area-inset-top, 8px)" }}>
+        <div className="flex items-center gap-2">
+          <button onClick={goToCatalog}>
+            <Cloud className="w-6 h-6 text-[#1DAFF7]" />
+          </button>
+          {onToggleSidebar && (
+            <button onClick={onToggleSidebar} className="text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          <span className="text-sm font-semibold">{title}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={handleNewSearch} className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground bg-secondary hover:bg-accent transition-colors" title="Подбор сервиса">
+            <Plus className="w-4 h-4" />
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
     );
   }
@@ -497,6 +521,7 @@ export default function App() {
   if (phase === "catalog") {
     return (
       <div className="h-screen flex flex-col bg-background transition-colors duration-300">
+        <MobileHeader title="Каталог" />
         <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {catalogServices.map((s, i) => (
@@ -507,9 +532,9 @@ export default function App() {
           </div>
         </div>
 
-        <div className="shrink-0 border-t bg-card px-3 sm:px-5 py-3">
+        <div className="shrink-0 border-t bg-card px-3 sm:px-5 py-3" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
           <div className="flex items-center justify-between">
-            <Logo />
+            <div className="hidden sm:block"><Logo /></div>
             <div className="flex-1 max-w-2xl mx-2 sm:mx-8 relative">
               {showSuggestions && (
                 <div className="absolute bottom-full left-0 right-12 mb-2 flex gap-2 flex-wrap">
@@ -528,7 +553,7 @@ export default function App() {
                 </div>
               )}
               <div className="flex gap-2 relative">
-                <Search className="absolute left-4 top-4 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
+                <Search className="absolute left-4 top-3.5 sm:top-4 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
                 <Textarea
                   value={input}
                   onChange={(e) => {
@@ -543,12 +568,12 @@ export default function App() {
                   rows={1}
                   className="flex-1 pl-10 text-foreground"
                 />
-                <Button onClick={handleCatalogSearch} disabled={!input.trim()} size="icon" className="w-12 h-12 shrink-0">
-                  <Send className="w-5 h-5" />
+                <Button onClick={handleCatalogSearch} disabled={!input.trim()} size="icon" className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
             </div>
-            <RightButtons showNewChat={false} />
+            <div className="hidden sm:block"><RightButtons showNewChat={false} /></div>
           </div>
         </div>
 
@@ -568,16 +593,17 @@ export default function App() {
   if (phase === "chat") {
     return (
       <div className="h-screen flex flex-col bg-background transition-colors duration-300">
+        <MobileHeader title={isNewSearch ? "Подбор сервиса" : "Чат"} />
         {resultsHistory.length > 0 && !isNewSearch && (
-          <div className="shrink-0 flex items-center justify-end px-5 py-2 border-b">
+          <div className="shrink-0 hidden sm:flex items-center justify-end px-5 py-2 border-b">
             <button onClick={goToResults} className="text-muted-foreground hover:text-foreground transition-colors" title="Свернуть чат">
               <Minimize2 className="w-5 h-5" />
             </button>
           </div>
         )}
         {isNewSearch && (
-          <div className="shrink-0 flex items-center px-5 py-2 border-b gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Новый подбор</span>
+          <div className="shrink-0 hidden sm:flex items-center px-5 py-2 border-b gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Подбор сервиса</span>
             <button onClick={goToResults} className="text-muted-foreground hover:text-foreground transition-colors ml-auto" title="Назад к результатам">
               <Minimize2 className="w-5 h-5" />
             </button>
@@ -623,9 +649,9 @@ export default function App() {
             </div>
           </div>
 
-        <div className="shrink-0 border-t bg-card px-3 sm:px-5 py-3">
+        <div className="shrink-0 border-t bg-card px-3 sm:px-5 py-3" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
           <div className="flex items-center justify-between">
-            <Logo />
+            <div className="hidden sm:block"><Logo /></div>
             <div className="flex-1 max-w-2xl mx-2 sm:mx-8 flex gap-3">
               <Textarea
                 value={input}
@@ -640,11 +666,11 @@ export default function App() {
                 rows={1}
                 className="flex-1 text-foreground"
               />
-              <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="w-12 h-12 shrink-0">
-                <Send className="w-5 h-5" />
+              <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
-            <RightButtons showNewChat={true} />
+            <div className="hidden sm:block"><RightButtons showNewChat={true} /></div>
           </div>
         </div>
       </div>
@@ -653,14 +679,83 @@ export default function App() {
 
   // =========================== RESULTS ===========================
   const currentSet = resultsHistory[selectedResultIdx];
+  const hasHistory = resultsHistory.length > 0;
+  const handleMobileSidebarToggle = () => setShowSearchHistory(v => !v);
 
   return (
     <div className="h-screen flex flex-col bg-background transition-colors duration-300">
-      <div className="flex-1 flex overflow-hidden relative">
-        {resultsHistory.length > 0 && (
+      <MobileHeader title="Результаты" onToggleSidebar={hasHistory ? handleMobileSidebarToggle : undefined} />
+
+      {/* MOBILE: split layout — top results, bottom chat + input */}
+      <div className="sm:hidden flex-1 flex flex-col overflow-hidden">
+        {/* Top half: scrollable results */}
+        <div className="flex-1 overflow-y-auto">
+          {currentSet && (
+            <div className="p-3">
+              <div className="grid grid-cols-1 gap-2">
+                {currentSet.results.map((res, idx) => (
+                  <div key={res.id} className="flex animate-in fade-in duration-400" style={{ animationDelay: `${idx * 120}ms` }}>
+                    <ResultCardFull result={res} rank={idx + 1} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Divider handle */}
+        <div className="shrink-0 border-t flex items-center justify-center py-1.5 bg-card">
+          <div className="w-8 h-1 rounded-full bg-muted-foreground/30" />
+        </div>
+
+        {/* Bottom half: scrollable chat messages */}
+        <div ref={chatRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
+              <div className={`max-w-[90%] px-3 py-2 text-sm leading-relaxed ${
+                msg.role === "user"
+                  ? "bg-gradient-to-br from-[#1DAFF7] to-[#008ACD] text-white rounded-2xl rounded-br-md"
+                  : "bg-muted text-foreground rounded-2xl rounded-bl-md"
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start animate-in fade-in duration-200">
+              <Skeleton className="h-10 w-3/4 rounded-2xl rounded-bl-md" />
+            </div>
+          )}
+        </div>
+
+        {/* Input bar */}
+        <div className="shrink-0 border-t bg-card px-3 py-2" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
+          <div className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = e.target.scrollHeight + "px";
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Уточните запрос..."
+              disabled={isLoading}
+              rows={1}
+              className="flex-1 text-foreground"
+            />
+            <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="w-10 h-10 shrink-0">
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* DESKTOP: current layout — no changes */}
+      <div className="hidden sm:flex flex-1 overflow-hidden relative">
+        {hasHistory && (
           <>
-            {/* Desktop sidebar */}
-            <div className={`shrink-0 border-r bg-card overflow-y-auto p-4 space-y-3 transition-all duration-200 hidden md:block ${showSearchHistory ? "w-60" : "w-auto"}`}>
+            <div className={`shrink-0 border-r bg-card overflow-y-auto p-4 space-y-3 transition-all duration-200 ${showSearchHistory ? "w-60" : "w-auto"}`}>
               <div className="flex items-center gap-2">
                 {!showSearchHistory && <div className="w-4" />}
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Прошлые подборки</div>
@@ -682,50 +777,19 @@ export default function App() {
                 </button>
               ))}
             </div>
-
-            {/* Mobile sidebar overlay */}
-            {showSearchHistory && (
-              <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowSearchHistory(false)}>
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-                <div className="absolute left-0 top-0 bottom-0 w-64 bg-card border-r shadow-2xl p-4 space-y-3 overflow-y-auto animate-in slide-in-from-left duration-200" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Прошлые подборки</div>
-                    <button onClick={() => setShowSearchHistory(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {resultsHistory.map((entry, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => { setSelectedResultIdx(idx); setMessages(resultsHistory[idx].messages); setShowSearchHistory(false); }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
-                        idx === selectedResultIdx
-                          ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <div className="line-clamp-2">{entry.query}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         )}
-          <div className="flex-1 overflow-y-auto">
-            {currentSet && (
-              <div className="max-w-6xl mx-auto p-3 sm:p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <button onClick={() => setShowSearchHistory(v => !v)} className="md:hidden text-muted-foreground hover:text-foreground transition-colors">
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#1DAFF7] to-[#008ACD]" />
-                <h2 className="text-base font-bold tracking-tight">Результаты подбора</h2>
+        <div className="flex-1 overflow-y-auto">
+          {currentSet && (
+            <div className="max-w-6xl mx-auto p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#1DAFF7] to-[#008ACD]" />
+                <h2 className="text-base font-bold tracking-tight">Результаты</h2>
                 {selectedResultIdx > 0 && (
                   <span className="text-xs text-muted-foreground ml-2">(архивный)</span>
                 )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {currentSet.results.map((res, idx) => (
                   <div key={res.id} className="flex animate-in fade-in duration-400" style={{ animationDelay: `${idx * 120}ms` }}>
                     <ResultCardFull result={res} rank={idx + 1} />
@@ -737,14 +801,16 @@ export default function App() {
         </div>
       </div>
 
+      {/* DESKTOP: bottom bar — no changes */}
       <div
-        className="shrink-0 border-t bg-card px-3 sm:px-5 py-3 relative"
-        onMouseEnter={() => messages.length > 0 && setShowHistory(true)}
+        className="hidden sm:block shrink-0 border-t bg-card px-5 py-3 relative"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
+        onMouseEnter={() => messages.length > 0 && !isNewSearch && setShowHistory(true)}
         onMouseLeave={() => setShowHistory(false)}
       >
         <div className="flex items-center justify-between">
           <Logo />
-          <div className="flex-1 max-w-2xl mx-2 sm:mx-8">
+          <div className="flex-1 max-w-2xl mx-8">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 {showHistory && messages.length > 0 && (
@@ -761,7 +827,7 @@ export default function App() {
                     e.target.style.height = e.target.scrollHeight + "px";
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Дополните или уточните запрос..."
+                  placeholder="Уточните запрос..."
                   disabled={isLoading}
                   rows={1}
                   className="flex-1 text-foreground"
@@ -775,6 +841,34 @@ export default function App() {
           <RightButtons showNewChat={true} />
         </div>
       </div>
+
+      {/* Mobile sidebar overlay */}
+      {showSearchHistory && (
+        <div className="sm:hidden fixed inset-0 z-50" onClick={() => setShowSearchHistory(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="absolute left-0 top-0 bottom-0 w-64 bg-card border-r shadow-2xl p-4 space-y-3 overflow-y-auto animate-in slide-in-from-left duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Прошлые подборки</div>
+              <button onClick={() => setShowSearchHistory(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+            {resultsHistory.map((entry, idx) => (
+              <button
+                key={idx}
+                onClick={() => { setSelectedResultIdx(idx); setMessages(resultsHistory[idx].messages); setShowSearchHistory(false); }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                  idx === selectedResultIdx
+                    ? "bg-[#1DAFF7]/10 text-[#1DAFF7] font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <div className="line-clamp-2">{entry.query}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
