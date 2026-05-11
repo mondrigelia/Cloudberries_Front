@@ -583,9 +583,26 @@ export default function App() {
             </button>
           </div>
         )}
-        <div ref={chatRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-6">
-            <div className="max-w-3xl mx-auto space-y-4">
-              {messages.length === 0 ? null : (
+        <div ref={chatRef} className={`flex-1 overflow-y-auto px-3 sm:px-4 ${messages.length === 0 && isNewSearch ? "flex items-center justify-center py-0" : "py-6"}`}>
+            <div className={`mx-auto ${messages.length === 0 && isNewSearch ? "" : "max-w-3xl space-y-4"}`}>
+              {messages.length === 0 && isNewSearch ? (
+                <div className="flex flex-col items-center text-center animate-in fade-in duration-300">
+                  <Cloud className="w-10 h-10 text-[#1DAFF7] mb-4" />
+                  <h3 className="text-base font-semibold mb-2">Подбор облачных сервисов</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mb-6">Опишите вашу задачу — система подберёт лучшие решения от российских провайдеров</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {["S3 хранилище до 3000 ₽", "VPS под 152-ФЗ", "Kubernetes"].map((hint) => (
+                      <button
+                        key={hint}
+                        onClick={() => { setInput(hint); }}
+                        className="px-4 py-2 text-sm font-medium rounded-full bg-card border border-border hover:border-[#1DAFF7]/30 hover:text-[#1DAFF7] hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all shadow-sm"
+                      >
+                        {hint}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
                 messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
                     <div className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[70%] px-3 py-2 sm:px-4 sm:py-3 text-sm leading-relaxed ${
