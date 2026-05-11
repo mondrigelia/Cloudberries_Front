@@ -494,17 +494,35 @@ export default function App() {
   }
 
   function MobileHeader({ title, onToggleSidebar }: { title: string; onToggleSidebar?: () => void }) {
+    if (onToggleSidebar) {
+      return (
+        <div className="flex sm:hidden flex-col border-b bg-card shrink-0" style={{ paddingTop: "env(safe-area-inset-top, 8px)" }}>
+          <div className="flex items-center justify-between px-4 py-1.5">
+            <button onClick={goToCatalog}>
+              <Cloud className="w-6 h-6 text-[#1DAFF7]" />
+            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={handleNewSearch} className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground bg-secondary hover:bg-accent transition-colors" title="Подбор сервиса">
+                <Plus className="w-4 h-4" />
+              </button>
+              <ThemeToggle />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 pb-2">
+            <button onClick={onToggleSidebar} className="text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-semibold">{title}</span>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex sm:hidden items-center justify-between px-4 py-2 border-b bg-card shrink-0" style={{ paddingTop: "env(safe-area-inset-top, 8px)" }}>
         <div className="flex items-center gap-2">
           <button onClick={goToCatalog}>
             <Cloud className="w-6 h-6 text-[#1DAFF7]" />
           </button>
-          {onToggleSidebar && (
-            <button onClick={onToggleSidebar} className="text-muted-foreground hover:text-foreground transition-colors">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
           <span className="text-sm font-semibold">{title}</span>
         </div>
         <div className="flex items-center gap-1">
