@@ -310,6 +310,9 @@ export default function App() {
   const [isNewSearch, setIsNewSearch] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const loadingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [splitRatio, setSplitRatio] = useState(0.6);
+  const isDragging = useRef(false);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -700,14 +703,28 @@ export default function App() {
   const hasHistory = resultsHistory.length > 0;
   const handleMobileSidebarToggle = () => setShowSearchHistory(v => !v);
 
+  function handleSplitPointerDown(e: React.PointerEvent) {
+    isDragging.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function handleSplitPointerMove(e: React.PointerEvent) {
+    if (!isDragging.current || !splitContainerRef.current) return;
+    const rect = splitContainerRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    setSplitRatio(Math.max(0.15, Math.min(0.85, y / rect.height)));
+  }
+  function handleSplitPointerUp() {
+    isDragging.current = false;
+  }
+
   return (
     <div className="h-screen flex flex-col bg-background transition-colors duration-300">
       <MobileHeader title="Результаты" onToggleSidebar={hasHistory ? handleMobileSidebarToggle : undefined} />
 
       {/* MOBILE: split layout — top results, bottom chat + input */}
-      <div className="sm:hidden flex-1 flex flex-col overflow-hidden">
-        {/* Top: scrollable results (60%) */}
-        <div className="flex-[6] overflow-y-auto min-h-0">
+      <div ref={splitContainerRef} className="sm:hidden flex-1 flex flex-col overflow-hidden select-none">
+        {/* Top: scrollable results */}
+        <div className="overflow-y-auto min-h-0" style={{ flex: splitRatio }}>
           {currentSet && (
             <div className="p-3">
               <div className="grid grid-cols-1 gap-2">
@@ -721,13 +738,19 @@ export default function App() {
           )}
         </div>
 
-        {/* Divider */}
-        <div className="shrink-0 border-t flex items-center justify-center py-1.5 bg-card">
+        {/* Draggable divider */}
+        <div
+          className="shrink-0 border-t flex items-center justify-center py-3 bg-card cursor-row-resize"
+          style={{ touchAction: "none" }}
+          onPointerDown={handleSplitPointerDown}
+          onPointerMove={handleSplitPointerMove}
+          onPointerUp={handleSplitPointerUp}
+        >
           <div className="w-8 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        {/* Bottom: scrollable chat messages (40%) */}
-        <div ref={chatRef} className="flex-[4] overflow-y-auto px-3 py-2 space-y-2 min-h-0">
+        {/* Bottom: scrollable chat messages */}
+        <div ref={chatRef} className="overflow-y-auto px-3 py-2 space-y-2 min-h-0" style={{ flex: 1 - splitRatio }}>
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in duration-200`}>
               <div className={`max-w-[90%] px-3 py-2 text-sm leading-relaxed ${
