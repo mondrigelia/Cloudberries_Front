@@ -166,7 +166,6 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
           {result.platform && <MetricRow label="Платформа" value={result.platform} />}
           <MetricRow label="Регионы" value={result.region} />
         </div>
-        <div className="flex-1" />
         <div className="flex gap-1.5 flex-wrap">
           {result.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/30 dark:to-blue-900/30 text-[#1DAFF7] border-sky-100/50 dark:border-sky-700/30">
@@ -197,6 +196,7 @@ function ResultCardFull({ result, rank }: { result: ServiceResult; rank: number 
             </table>
           </div>
         )}
+        <div className="flex-1" />
       </div>
     </Card>
   );
